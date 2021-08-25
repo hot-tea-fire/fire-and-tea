@@ -1,0 +1,5 @@
+2021-08-24 16:25:37,851 - simple_example - DEBUG - debug message
+2021-08-24 16:25:37,851 - simple_example - INFO - info message
+2021-08-24 16:25:37,851 - simple_example - WARNING - warn message
+2021-08-24 16:25:37,851 - simple_example - ERROR - error message
+2021-08-24 16:25:37,852 - simple_example - CRITICAL - critical message
