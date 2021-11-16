@@ -1,6 +1,6 @@
 import logging
 
-log_path = '../../logs/log_test.log'
+log_path = '../logs/log_test.log'
 logging.basicConfig(filename=log_path, encoding='utf-8', filemode='w', level=logging.DEBUG)
 
 # logging.debug('This message should go to the log file')

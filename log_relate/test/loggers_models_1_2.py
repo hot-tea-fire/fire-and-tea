@@ -1,11 +1,11 @@
 import logging
-from log_py.test import loggers_models_2_2
+from log_relate.test import loggers_models_2_2
 
 # create logger with 'spam_application'
 logger = logging.getLogger('spam_application')
 logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
-fh = logging.FileHandler('../../logs/models.log', mode='w')
+fh = logging.FileHandler('../logs/models.log', mode='w')
 fh.setLevel(logging.DEBUG)
 # create console handler with a higher log level
 ch = logging.StreamHandler()
