@@ -1,29 +1,14 @@
-import itertools as it
+from collections import OrderedDict
 
-while True:
-    try:
-        ls = input().split(" ")
-        n = int(ls[0])
-        s = []
-        for i in range(n):
-            s.append((tuple(ls[1 + i])))
+d = OrderedDict()
 
-        key = ls[n + 1]
-        ind = int(ls[-1])
-        bro = tuple(key)
-        key = list(it.permutations(bro))
+d['a'] = 'a'
+d['b'] = 'b'
+d['c'] = 'c'
+d['d'] = 'd'
+d['e'] = 'e'
 
-        end = []
-        for i in range(n):
-            if s[i] in key and s[i] != bro:
-                end.append("".join(map(str, s[i])))
+d.move_to_end(key='c', last=True)
 
-        bro_num = len(end)
-        end.sort()
+print(d)
 
-        print(bro_num)
-        if ind <= bro_num:
-            print(end[ind - 1])
-
-    except:
-        break

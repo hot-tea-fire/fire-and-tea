@@ -1,20 +1,22 @@
-import concurrent.futures
-import time
+import numpy
+from multiprocessing.shared_memory import SharedMemory
 
-nums = {1: 'a', 3: 'i'}
-
-
-def fib(item):
-    print(item)
-
-    time.sleep(1)
-
-
-def main():
-    with concurrent.futures.ProcessPoolExecutor(max_workers=10) as e:
-        for i in range(5):
-            e.submit(fib, i)
+def get_target_shared_memory(name: str) -> SharedMemory:
+    try:
+        share = SharedMemory(create=True, size=10, name=name)
+    except FileExistsError:
+        share = SharedMemory(create=False, name=name)
+    return share
 
 
-if __name__ == '__main__':
-    main()
+shm_a = get_target_shared_memory(name='fire')
+buffer = shm_a.buf
+
+buffer[:4] = bytes([1,2,3,45])
+
+buffer[4] = 5
+buffer[5:] = bytes(numpy.array([3,4,5,67,9]))
+
+for i in buffer:
+    print(i)
+
