@@ -25,22 +25,28 @@ from typing import List
 class Solution:
     def maxWater(self, arr: List[int]) -> int:
         # write code here
-
+        left_altitude = 0
+        left_index = None
+        for index, item in enumerate(arr[::-1]):
+            if item > left_altitude:
+                left_altitude = item
+                left_index = -index
+        right_altitude = 0
+        right_index = None
+        for index, item in enumerate(arr):
+            if item > right_altitude:
+                right_altitude = item
+                right_index = index
         all_water = 0
-        if len(arr) <= 2:
-            return 0
-        tall_1 = 0
-        tall_2 = 0
-        for index, value in enumerate(arr):
-            if value <= arr[tall_2]:
-                tall_2 = index
+        li_pool = []
+        first = arr[right_index]
+        for item in arr[left_index + 1:right_index]:
+            if item > first:
+                for i in li_pool:
+                    all_water = all_water + i
+
             else:
-                # 计算当前存储
-                tall_2 += 1
-                standard = tall_1 if tall_1 <= tall_2 else tall_2
-                for i in arr[tall_1 + 1:tall_2]:
-                    all_water += arr[standard - i]
-                tall_1, tall_2 = index, index
+                li_pool.append(item)
         print(all_water)
         return all_water
 
