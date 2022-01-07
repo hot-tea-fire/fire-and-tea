@@ -8,14 +8,42 @@
 num1 = ['zero', 'one', 'two', 'three', 'four', 'five', 'six',
         'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
         'thirteen', 'fourteen', 'fifteen', 'seventeen', 'eighteen', 'nineteen']
-num2 = [0, 0, 'twenty', 'thirty', 'forty', 'fifty', 'sixty',
+num2 = [0, 'ten', 'twenty', 'thirty', 'forty', 'fifty', 'sixty',
         'seventy', 'eighty', 'ninety']
 
-word = []
 
 def eng_read(a):
-    if a > 100:
-        word
+    word = []
+    if a >= 100:
+        digit = a // 100
+        word.append(num1[digit])
+        word.append('hundred')
+        if (a % 100) != 0:
+            if (a % 100) < 20:
+                word.append('and')
+                word.append(num1[a % 100])
+            else:
+                num = (a % 100) // 10
+                if num:
+                    word.append('and')
+                    word.append(num2[num])
+                    ones_place = (a % 10)
+                    if ones_place:
+                        word.append(num1[ones_place])
+                else:
+                    word.append('and')
+                    word.append(num1[a % 10])
+
+    elif a < 20:
+        word.append(num1[a])
+    else:
+        num = a // 10
+        if num:
+            word.append(num2[num])
+            ones_place = (a % 10)
+            if ones_place:
+                word.append(num1[ones_place])
+    return word
 
 
 def solution():
@@ -30,7 +58,21 @@ def solution():
             mi = (number % 1000000000) // 1000000
             th = (number % 1000000) // 1000
             target = number % 1000
-            pass
+            if bi:
+                res_list += num2[bi]
+                res_list.append('billion')
+
+            if mi:
+                res_list += eng_read(mi)
+                res_list.append('million')
+
+            if th:
+                res_list += eng_read(th)
+                res_list.append('thousand')
+
+            if target:
+                res_list += eng_read(target)
+            print(' '.join(res_list))
 
 
 if __name__ == '__main__':
