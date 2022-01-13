@@ -30,11 +30,13 @@ Note:
     所有涉及到的图片都默认为1920*1080*3大小的图片!
 
 """
+import time
 from multiprocessing.shared_memory import SharedMemory
 from multiprocessing import Manager, Lock
 from typing import Dict, Tuple, Optional
 
 import numpy
+import cv2
 
 manager: Optional[Manager] = None
 """共享内存的Manager，主要用于同一个memory写入读取的锁控制"""
@@ -73,9 +75,11 @@ def _get_device_model_share_memory(shared_memory_name: str) -> Tuple[SharedMemor
     # 如果不存在此共享内存键，则创建一个新的内存名-内存键值对
     if shared_memory_name not in _share_memory_cache_mapper:
         try:
-            shared = SharedMemory(name=shared_memory_name, create=True, size=1920 * 1080 * 3)
+            shared = SharedMemory(name=shared_memory_name, create=True, size=1920 * 1080 * 3 + 900)
         except FileExistsError:
             shared = SharedMemory(name=shared_memory_name, create=False)
+            # shared.close()
+            # shared.unlink()
         _share_memory_cache_mapper[shared_memory_name] = shared
 
     # 如果不存在锁对象，则创建一个锁对象
@@ -87,70 +91,95 @@ def _get_device_model_share_memory(shared_memory_name: str) -> Tuple[SharedMemor
     return _share_memory_cache_mapper[shared_memory_name], _share_memory_lock_mapper[shared_memory_name]
 
 
-def dump_image_into_shared_memory(shared_memory_name: str, image: numpy.ndarray) -> memoryview:
-    """将当前的图片dump成共享内存放入当前的共享内存映射中，此操作加锁
-
-    Args:
-        shared_memory_name (str): 共享内存名
-        image (numpy.ndarray): numpy格式图片
-
-    Returns:
-        memoryview: 内存对象
-    """
-    shared_memory, lock = _get_device_model_share_memory(shared_memory_name)
-
-    with lock:
-        shared_memory.buf[:] = image.tobytes()
-    return shared_memory.buf
-
-
-def load_image_from_shared_memory(shared_memory_name: str) -> numpy.ndarray:
-    """从当前的共享内存映射中读取相应的共享内存并转换为图像，此操作加锁
-
-    Args:
-        shared_memory_name (str): 共享内存名
-
-    Returns:
-        numpy.ndarray: numpy格式图片
-    """
-    shared_memory, lock = _get_device_model_share_memory(shared_memory_name)
-
-    with lock:
-        image = numpy.frombuffer(shared_memory.buf, dtype=numpy.uint8).reshape((1080, 1920, 3))
-    return image
-
-
-# def dump_base64_into_shared_memory(shared_memory_name: str, base64_bytes: bytes):
-#     """Abort 保存base64数据
-#     """
-#     shared_memory, lock = _get_device_model_share_memory(shared_memory_name)
+# def dump_image_into_shared_memory(shared_memory_name: str, image: numpy.ndarray) -> memoryview:
+#     """将当前的图片dump成共享内存放入当前的共享内存映射中，此操作加锁
 #
-#     memory_length = len(shared_memory.buf)
-#     base64_bytes_length = len(base64_bytes)
+#     Args:
+#         shared_memory_name (str): 共享内存名
+#         image (numpy.ndarray): numpy格式图片
 #
-#     assert memory_length > base64_bytes_length
-#
-#     compress_bytes = bytearray().join([
-#         base64_bytes,
-#         bytearray(memory_length - base64_bytes_length - 3),
-#         base64_bytes_length.to_bytes(length=3, byteorder='big'),
-#     ])
-#     with lock:
-#         shared_memory.buf[:] = compress_bytes
-#
-# # abort
-# def load_base64_from_shared_memory(shared_memory_name: str) -> numpy.ndarray:
-#     """Abort 读取base64数据
+#     Returns:
+#         memoryview: 内存对象
 #     """
 #     shared_memory, lock = _get_device_model_share_memory(shared_memory_name)
 #
 #     with lock:
-#         memory_bytes = shared_memory.buf.tobytes()
+#         shared_memory.buf[:] = image.tobytes()
+#     return shared_memory.buf
+
+
+# def load_image_from_shared_memory(shared_memory_name: str) -> numpy.ndarray:
+#     """从当前的共享内存映射中读取相应的共享内存并转换为图像，此操作加锁
 #
-#     base64_bytes_length = int.from_bytes(memory_bytes[-3:], byteorder='big')
+#     Args:
+#         shared_memory_name (str): 共享内存名
 #
-#     # TODO: common buffer in numpy arrays.
-#     # ref: https://docs.python.org/zh-cn/3/library/multiprocessing.shared_memory.html
-#     raw_array = numpy.frombuffer(memory_bytes[:base64_bytes_length], numpy.uint8)
-#     image = cv2.imdecode(raw_array, cv2.IMREAD_COLOR)
+#     Returns:
+#         numpy.ndarray: numpy格式图片
+#     """
+#     shared_memory, lock = _get_device_model_share_memory(shared_memory_name)
+#
+#     with lock:
+#         image = numpy.frombuffer(shared_memory.buf, dtype=numpy.uint8).reshape((1080, 1920, 3))
 #     return image
+
+
+def dump_image_into_shared_memory(shared_memory_name: str, base64_bytes: bytes):
+    """Abort 保存base64数据
+    """
+    shared_memory, lock = _get_device_model_share_memory(shared_memory_name)
+
+    memory_length = len(shared_memory.buf)
+    base64_bytes_length = base64_bytes.size
+
+    assert memory_length > base64_bytes_length
+
+    # current_time = int(1642056694)
+    current_time = int(time.time())
+    compress_bytes = bytearray().join([
+        base64_bytes,
+        bytearray(memory_length - base64_bytes_length - 7),
+        current_time.to_bytes(length=4, byteorder='big'),
+        base64_bytes_length.to_bytes(length=3, byteorder='big'),
+    ])
+    with lock:
+        # print(len(shared_memory.buf))
+        # print(len(compress_bytes))
+        # print(f'base64_bytes_length  {base64_bytes_length}')
+        shared_memory.buf[:] = compress_bytes
+
+
+# abort
+def load_image_from_shared_memory(shared_memory_name: str):
+    """Abort 读取base64数据
+    return:
+        flag: 是否取到的是实时图片
+        image： 图片，若非实时
+    """
+    shared_memory, lock = _get_device_model_share_memory(shared_memory_name)
+
+    with lock:
+        memory_bytes = shared_memory.buf.tobytes()
+
+    base64_bytes_length = int.from_bytes(memory_bytes[-3:], byteorder='big')
+    dum_time = int.from_bytes(memory_bytes[-7:-3], byteorder='big')
+
+    if time.time() - dum_time > 5:
+        print(f'从摄像头{shared_memory_name} 的共享内存中读图时，当前图片已停留超过5s，不再具有实现性，放弃本次推导')
+        return False, numpy.frombuffer(memory_bytes[:base64_bytes_length], numpy.uint8).reshape((1080, 1920, 3))
+
+    # TODO: common buffer in numpy arrays.
+    # ref: https://docs.python.org/zh-cn/3/library/multiprocessing.shared_memory.html
+    raw_array = numpy.frombuffer(memory_bytes[:base64_bytes_length], numpy.uint8).reshape((1080, 1920, 3))
+    # image = cv2.imdecode(raw_array, cv2.IMREAD_COLOR)
+    # print(f'size ------ {raw_array.shape}')
+    return True, raw_array
+
+
+if __name__ == '__main__':
+    img = cv2.imread('/home/hadoop/car1.jpg')
+    print(img.size)
+    dump_image_into_shared_memory('34020000001320000006', img)
+
+    flag, res = load_image_from_shared_memory('34020000001320000006')
+    print(f'res   {res.shape}')
